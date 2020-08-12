@@ -22,6 +22,17 @@ enum class EPlanarConstraint : uint8
 	Z,
 };
 
+UENUM()
+enum class EBoneForwardAxis : uint8
+{
+	X_Positive,
+	X_Negative,
+	Y_Positive,
+	Y_Negative,
+	Z_Positive,
+	Z_Negative,
+};
+
 USTRUCT()
 struct FCollisionLimitBase
 {
@@ -85,17 +96,17 @@ struct KAWAIIPHYSICS_API FKawaiiPhysicsSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"), category = "KawaiiPhysics")
 	float Damping = 0.1f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"), category = "KawaiiPhysics")
 	float WorldDampingLocation = 0.8f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"), category = "KawaiiPhysics")
 	float WorldDampingRotation = 0.8f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"), category = "KawaiiPhysics")
 	float Stiffness = 0.05f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"), category = "KawaiiPhysics")
 	float Radius = 3.0f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (PinHiddenByDefault, ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (PinHiddenByDefault, ClampMin = "0"), category = "KawaiiPhysics")
 	float LimitAngle = 0.0f;
 };
 
@@ -202,8 +213,12 @@ public:
 	bool bUpdatePhysicsSettingsInGame = true;
 	
 	/** Add a dummy bone to the end bone if it's above 0. It affects end bone rotation. For example, it rotates well if it is short */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced Physics Settings", meta = (PinHiddenByDefault, ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DummyBone", meta = (PinHiddenByDefault, ClampMin = "0"))
 	float DummyBoneLength = 0.0f;
+
+	/** Bone forward direction */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DummyBone", meta = (PinHiddenByDefault))
+	EBoneForwardAxis BoneForwardAxis = EBoneForwardAxis::X_Positive;
 
 	/** Fix the bone on the specified plane  */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced Physics Settings", meta = (PinHiddenByDefault))
@@ -282,6 +297,24 @@ public:
 	}
 
 private:
+	FVector GetBoneForwardVector(const FQuat& Rotation)
+	{
+		switch(BoneForwardAxis) {
+		default:
+		case EBoneForwardAxis::X_Positive:
+			return Rotation.GetAxisX();
+		case EBoneForwardAxis::X_Negative:
+			return -Rotation.GetAxisX();
+		case EBoneForwardAxis::Y_Positive:
+			return Rotation.GetAxisY();
+		case EBoneForwardAxis::Y_Negative:
+			return -Rotation.GetAxisY();
+		case EBoneForwardAxis::Z_Positive:
+			return Rotation.GetAxisZ();
+		case EBoneForwardAxis::Z_Negative:
+			return -Rotation.GetAxisZ();
+		}
+	}
 	// FAnimNode_SkeletalControlBase interface
 	virtual void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
 	// End of FAnimNode_SkeletalControlBase interface
@@ -297,7 +330,7 @@ private:
 	void UpdateCapsuleLimits(FComponentSpacePoseContext& Output, const FBoneContainer& BoneContainer, FTransform& ComponentTransform);
 	void UpdatePlanerLimits(FComponentSpacePoseContext& Output, const FBoneContainer& BoneContainer, FTransform& ComponentTransform);
 
-	void SimulateModfyBones(FComponentSpacePoseContext& Output, const FBoneContainer& BoneContainer, FTransform& ComponentTransform);
+	void SimulateModifyBones(FComponentSpacePoseContext& Output, const FBoneContainer& BoneContainer, FTransform& ComponentTransform);
 	void AdjustBySphereCollision(FKawaiiPhysicsModifyBone& Bone);
 	void AdjustByCapsuleCollision(FKawaiiPhysicsModifyBone& Bone);
 	void AdjustByPlanerCollision(FKawaiiPhysicsModifyBone& Bone);
